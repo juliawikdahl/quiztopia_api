@@ -1,0 +1,22 @@
+{
+  "name": "quiztopia-api",
+  "version": "1.0.0",
+  "description": "Quiztopia API for interactive quizzes",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1691.0",
+    "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.2",
+    "middy": "^0.36.0",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "serverless-dotenv-plugin": "^6.0.0",
+    "serverless-offline": "^14.3.2"
+  },
+  "author": "",
+  "license": "ISC"
+}

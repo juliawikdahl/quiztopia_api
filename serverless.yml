@@ -1,0 +1,108 @@
+service: quiztopia
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: eu-north-1
+  environment:
+    QUIZZES_TABLE: QuizzesTable
+    USERS_TABLE: UsersTable
+    JWT_SECRET: ${env:JWT_SECRET}
+
+# Definiera en IAM-roll med nödvändiga behörigheter
+iamRoleStatements:
+  - Effect: Allow
+    Action:
+      - dynamodb:PutItem
+      - dynamodb:GetItem
+      - dynamodb:Scan
+      - dynamodb:DeleteItem
+      - dynamodb:UpdateItem
+    Resource:
+      - arn:aws:dynamodb:${self:provider.region}:*:table/QuizzesTable
+      - arn:aws:dynamodb:${self:provider.region}:*:table/UsersTable
+
+functions:
+  signup:
+    handler: auth.signup
+    events:
+      - http:
+          path: auth/signup
+          method: post
+  login:
+    handler: auth.login
+    events:
+      - http:
+          path: auth/login
+          method: post
+  getQuizzes:
+    handler: quiz.getQuizzes
+    events:
+      - http:
+          path: quiz
+          method: get
+  createQuiz:
+    handler: quiz.createQuiz
+    events:
+      - http:
+          path: quiz
+          method: post
+  addQuestion:
+    handler: quiz.addQuestion
+    events:
+      - http:
+          path: quiz/question
+          method: post
+  getQuiz:
+    handler: quiz.getQuiz
+    events:
+      - http:
+          path: quiz/{quizId}
+          method: get
+      - http:
+          path: quiz/user/{userId}/{quizId}
+          method: get
+  deleteQuiz:
+    handler: quiz.deleteQuiz
+    events:
+      - http:
+          path: quiz/{quizId}
+          method: delete
+
+resources:
+  Resources:
+    QuizzesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: QuizzesTable
+        AttributeDefinitions:
+          - AttributeName: quizId
+            AttributeType: S
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: quizId
+            KeyType: HASH
+          - AttributeName: userId
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: UsersTable
+        AttributeDefinitions:
+          - AttributeName: username
+            AttributeType: S
+        KeySchema:
+          - AttributeName: username
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+
+plugins:
+  - serverless-offline
+  - serverless-dotenv-plugin
