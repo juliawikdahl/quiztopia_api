@@ -1,34 +1,37 @@
 const AWS = require('aws-sdk');
 const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
 const docClient = new AWS.DynamoDB.DocumentClient();
 const USERS_TABLE = process.env.USERS_TABLE;
 
 // Skapa en ny användare
 module.exports.signup = async (event) => {
     const { username, password } = JSON.parse(event.body);
-  
+    const userId = uuidv4(); // Generera ett unikt userId
+
     const params = {
       TableName: USERS_TABLE,
       Item: {
+        userId,    // Lägg till userId
         username,
-        password, // Tänk på att hash:a lösenord innan du sparar det
+        password,  // Tänk på att hash:a lösenord innan du sparar det
       },
     };
-  
+
     try {
       // Kontrollera om användarnamnet redan finns
       const existingUser = await docClient.get({
         TableName: USERS_TABLE,
         Key: { username },
       }).promise();
-  
+
       if (existingUser.Item) {
         return {
           statusCode: 409,
           body: JSON.stringify({ error: 'Användarnamnet finns redan' }),
         };
       }
-  
+
       await docClient.put(params).promise();
       return {
         statusCode: 201,
@@ -41,8 +44,7 @@ module.exports.signup = async (event) => {
         body: JSON.stringify({ error: 'Fel vid skapande av användare', details: error.message }),
       };
     }
-  };
-  
+};
 
 // Logga in användare och skapa JWT
 module.exports.login = async (event) => {
@@ -62,7 +64,9 @@ module.exports.login = async (event) => {
       };
     }
 
-    const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const { userId } = data.Item;  // Hämta userId från databasen
+
+    const token = jwt.sign({ userId, username }, process.env.JWT_SECRET, { expiresIn: '1h' });
     return {
       statusCode: 200,
       body: JSON.stringify({ token }),
