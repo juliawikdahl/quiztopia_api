@@ -127,7 +127,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-eu-north-1-4c1ed792-3ad4",
-          "S3Key": "serverless/quiztopia/dev/1727798406362-2024-10-01T16:00:06.362Z/quiztopia.zip"
+          "S3Key": "serverless/quiztopia/dev/1727798852682-2024-10-01T16:07:32.682Z/quiztopia.zip"
         },
         "Handler": "auth.signup",
         "Runtime": "nodejs18.x",
@@ -157,7 +157,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-eu-north-1-4c1ed792-3ad4",
-          "S3Key": "serverless/quiztopia/dev/1727798406362-2024-10-01T16:00:06.362Z/quiztopia.zip"
+          "S3Key": "serverless/quiztopia/dev/1727798852682-2024-10-01T16:07:32.682Z/quiztopia.zip"
         },
         "Handler": "auth.login",
         "Runtime": "nodejs18.x",
@@ -187,7 +187,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-eu-north-1-4c1ed792-3ad4",
-          "S3Key": "serverless/quiztopia/dev/1727798406362-2024-10-01T16:00:06.362Z/quiztopia.zip"
+          "S3Key": "serverless/quiztopia/dev/1727798852682-2024-10-01T16:07:32.682Z/quiztopia.zip"
         },
         "Handler": "quiz.getQuizzes",
         "Runtime": "nodejs18.x",
@@ -217,7 +217,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-eu-north-1-4c1ed792-3ad4",
-          "S3Key": "serverless/quiztopia/dev/1727798406362-2024-10-01T16:00:06.362Z/quiztopia.zip"
+          "S3Key": "serverless/quiztopia/dev/1727798852682-2024-10-01T16:07:32.682Z/quiztopia.zip"
         },
         "Handler": "quiz.createQuiz",
         "Runtime": "nodejs18.x",
@@ -247,7 +247,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-eu-north-1-4c1ed792-3ad4",
-          "S3Key": "serverless/quiztopia/dev/1727798406362-2024-10-01T16:00:06.362Z/quiztopia.zip"
+          "S3Key": "serverless/quiztopia/dev/1727798852682-2024-10-01T16:07:32.682Z/quiztopia.zip"
         },
         "Handler": "quiz.addQuestion",
         "Runtime": "nodejs18.x",
@@ -277,7 +277,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-eu-north-1-4c1ed792-3ad4",
-          "S3Key": "serverless/quiztopia/dev/1727798406362-2024-10-01T16:00:06.362Z/quiztopia.zip"
+          "S3Key": "serverless/quiztopia/dev/1727798852682-2024-10-01T16:07:32.682Z/quiztopia.zip"
         },
         "Handler": "quiz.getQuiz",
         "Runtime": "nodejs18.x",
@@ -307,7 +307,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-eu-north-1-4c1ed792-3ad4",
-          "S3Key": "serverless/quiztopia/dev/1727798406362-2024-10-01T16:00:06.362Z/quiztopia.zip"
+          "S3Key": "serverless/quiztopia/dev/1727798852682-2024-10-01T16:07:32.682Z/quiztopia.zip"
         },
         "Handler": "quiz.deleteQuiz",
         "Runtime": "nodejs18.x",
@@ -480,11 +480,23 @@
         }
       }
     },
-    "ApiGatewayResourceQuizUseridVar": {
+    "ApiGatewayResourceQuizUser": {
       "Type": "AWS::ApiGateway::Resource",
       "Properties": {
         "ParentId": {
           "Ref": "ApiGatewayResourceQuiz"
+        },
+        "PathPart": "user",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayResourceQuizUserUseridVar": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Ref": "ApiGatewayResourceQuizUser"
         },
         "PathPart": "{userId}",
         "RestApiId": {
@@ -492,11 +504,23 @@
         }
       }
     },
-    "ApiGatewayResourceQuizUseridVarQuizidVar": {
+    "ApiGatewayResourceQuizUserUseridVarQuiz": {
       "Type": "AWS::ApiGateway::Resource",
       "Properties": {
         "ParentId": {
-          "Ref": "ApiGatewayResourceQuizUseridVar"
+          "Ref": "ApiGatewayResourceQuizUserUseridVar"
+        },
+        "PathPart": "quiz",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayResourceQuizUserUseridVarQuizQuizidVar": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Ref": "ApiGatewayResourceQuizUserUseridVarQuiz"
         },
         "PathPart": "{quizId}",
         "RestApiId": {
@@ -516,7 +540,7 @@
         }
       }
     },
-    "ApiGatewayMethodQuizUseridVarQuizidVarOptions": {
+    "ApiGatewayMethodQuizUserUseridVarQuizQuizidVarOptions": {
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
         "AuthorizationType": "NONE",
@@ -554,7 +578,7 @@
           ]
         },
         "ResourceId": {
-          "Ref": "ApiGatewayResourceQuizUseridVarQuizidVar"
+          "Ref": "ApiGatewayResourceQuizUserUseridVarQuizQuizidVar"
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
@@ -836,13 +860,13 @@
         "AddQuestionLambdaPermissionApiGateway"
       ]
     },
-    "ApiGatewayMethodQuizUseridVarQuizidVarGet": {
+    "ApiGatewayMethodQuizUserUseridVarQuizQuizidVarGet": {
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
         "HttpMethod": "GET",
         "RequestParameters": {},
         "ResourceId": {
-          "Ref": "ApiGatewayResourceQuizUseridVarQuizidVar"
+          "Ref": "ApiGatewayResourceQuizUserUseridVarQuizQuizidVar"
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
@@ -928,7 +952,7 @@
         "DeleteQuizLambdaPermissionApiGateway"
       ]
     },
-    "ApiGatewayDeployment1727798389550": {
+    "ApiGatewayDeployment1727798836932": {
       "Type": "AWS::ApiGateway::Deployment",
       "Properties": {
         "RestApiId": {
@@ -937,14 +961,14 @@
         "StageName": "dev"
       },
       "DependsOn": [
-        "ApiGatewayMethodQuizUseridVarQuizidVarOptions",
+        "ApiGatewayMethodQuizUserUseridVarQuizQuizidVarOptions",
         "ApiGatewayMethodQuizQuizidVarOptions",
         "ApiGatewayMethodAuthSignupPost",
         "ApiGatewayMethodAuthLoginPost",
         "ApiGatewayMethodQuizGet",
         "ApiGatewayMethodQuizPost",
         "ApiGatewayMethodQuizQuestionPost",
-        "ApiGatewayMethodQuizUseridVarQuizidVarGet",
+        "ApiGatewayMethodQuizUserUseridVarQuizQuizidVarGet",
         "ApiGatewayMethodQuizQuizidVarDelete"
       ]
     },

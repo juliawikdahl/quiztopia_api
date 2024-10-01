@@ -57,7 +57,7 @@ functions:
     handler: quiz.getQuiz
     events:
       - http:
-          path: quiz/{userId}/{quizId}
+          path: quiz/user/{userId}/quiz/{quizId}
           method: get
           cors: true
   deleteQuiz:
