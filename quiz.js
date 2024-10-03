@@ -4,31 +4,6 @@ const { v4: uuidv4 } = require('uuid');
 const docClient = new AWS.DynamoDB.DocumentClient();
 const QUIZZES_TABLE = process.env.QUIZZES_TABLE;
 
-// Importera middy
-// const middy = require('@middy/core');
-// const httpErrorHandler = require('@middy/http-error-handler');
-// const validator = require('@middy/validator');
-
-
-// Middleware för autentisering
-// const authenticateJWT = async (event) => {
-//     const token = event.headers.Authorization || event.headers.authorization;
-
-//     if (!token) {
-//         throw new Error('Ingen token tillhandahållen');
-//     }
-
-//     const cleanToken = token.replace('Bearer ', '');
-//     return new Promise((resolve, reject) => {
-//         jwt.verify(cleanToken, process.env.JWT_SECRET, (err, user) => {
-//             if (err) {
-//                 return reject(new Error('Ogiltlig token'));
-//             }
-//             event.user = user; // Lägg till användarinformation i eventet
-//             resolve(event);
-//         });
-//     });
-// };
 
 module.exports.getQuizzes = async () => {
   const params = {
@@ -204,6 +179,166 @@ module.exports.deleteQuiz = async (event) => {
     };
   }
 };
+
+
+// koden med middy
+// const AWS = require('aws-sdk');
+// const jwt = require('jsonwebtoken');
+// const { v4: uuidv4 } = require('uuid');
+// const docClient = new AWS.DynamoDB.DocumentClient();
+// const QUIZZES_TABLE = process.env.QUIZZES_TABLE;
+
+
+// const middy = require('@middy/core');
+// const httpErrorHandler = require('@middy/http-error-handler');
+
+// Middleware för autentisering
+// const authenticateJWT = async (event) => {
+//     const token = event.headers.Authorization || event.headers.authorization;
+
+//     if (!token) {
+//         throw new Error('Ingen token tillhandahållen');
+//     }
+
+//     const cleanToken = token.replace('Bearer ', '');
+//     return new Promise((resolve, reject) => {
+//         jwt.verify(cleanToken, process.env.JWT_SECRET, (err, user) => {
+//             if (err) {
+//                 return reject(new Error('Ogiltlig token'));
+//             }
+//             event.user = user; 
+//             resolve(event);
+//         });
+//     });
+// };
+
+// Hämta alla quizzes
+// const getQuizzes = async () => {
+//     const params = {
+//         TableName: QUIZZES_TABLE,
+//     };
+
+//     try {
+//         const data = await docClient.scan(params).promise();
+//         return {
+//             statusCode: 200,
+//             body: JSON.stringify({ success: true, quizzes: data.Items }),
+//         };
+//     } catch (error) {
+//         console.error('Fel vid hämtning av quiz:', error);
+//         return {
+//             statusCode: 500,
+//             body: JSON.stringify({ error: 'Fel vid hämtning av quiz' }),
+//         };
+//     }
+// };
+
+// Skapa en ny quiz
+// const createQuiz = async (event) => {
+//     const { name } = JSON.parse(event.body);
+//     const quizId = uuidv4();
+//     const userId = event.user.userId; 
+
+//     const params = {
+//         TableName: QUIZZES_TABLE,
+//         Item: {
+//             userId,
+//             quizId,
+//             name,
+//             questions: [],
+//         },
+//     };
+
+//     await docClient.put(params).promise();
+//     return {
+//         statusCode: 201,
+//         body: JSON.stringify({ success: true, quizId }),
+//     };
+// };
+
+// Lägg till en fråga i en quiz
+// const addQuestion = async (event) => {
+//     const { quizId, question, answer, longitude, latitude } = JSON.parse(event.body);
+//     const userId = event.user.userId; 
+
+//     const params = {
+//         TableName: QUIZZES_TABLE,
+//         Key: { quizId, userId },
+//         UpdateExpression: 'SET questions = list_append(questions, :question)',
+//         ExpressionAttributeValues: {
+//             ':question': [{
+//                 question,
+//                 answer,
+//                 location: {
+//                     longitude,
+//                     latitude,
+//                 },
+//             }],
+//         },
+//         ReturnValues: 'UPDATED_NEW',
+//     };
+
+//     await docClient.update(params).promise();
+//     return {
+//         statusCode: 200,
+//         body: JSON.stringify({ success: true }),
+//     };
+// };
+
+// Hämta en specifik quiz
+// const getQuiz = async (event) => {
+//     const userId = event.pathParameters.userId;
+//     const quizId = event.pathParameters.quizId;
+
+//     const params = {
+//         TableName: QUIZZES_TABLE,
+//         Key: {
+//             userId,
+//             quizId,
+//         },
+//     };
+
+//     const data = await docClient.get(params).promise();
+//     if (!data.Item) {
+//         return {
+//             statusCode: 404,
+//             body: JSON.stringify({ success: false, error: 'Quiz inte hittat' }),
+//         };
+//     }
+
+//     return {
+//         statusCode: 200,
+//         body: JSON.stringify({ success: true, quiz: data.Item }),
+//     };
+// };
+
+// Ta bort en quiz
+// const deleteQuiz = async (event) => {
+//     const quizId = event.pathParameters.quizId;
+//     const userId = event.user.userId; 
+
+//     const params = {
+//         TableName: QUIZZES_TABLE,
+//         Key: {
+//             userId,
+//             quizId,
+//         },
+//     };
+
+//     const quiz = await docClient.get(params).promise();
+//     if (!quiz.Item) {
+//         return {
+//             statusCode: 404,
+//             body: JSON.stringify({ success: false, message: 'Quiz inte hittat' }),
+//         };
+//     }
+
+//     await docClient.delete(params).promise();
+//     return {
+//         statusCode: 200,
+//         body: JSON.stringify({ success: true, message: 'Quiz raderat' }),
+//     };
+// };
 
 // Exportera Lambda-funktionerna med middy och middleware
 // module.exports.getQuizzes = middy(getQuizzes).use(httpErrorHandler());
