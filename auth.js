@@ -4,22 +4,25 @@ const { v4: uuidv4 } = require('uuid');
 const docClient = new AWS.DynamoDB.DocumentClient();
 const USERS_TABLE = process.env.USERS_TABLE;
 
-// Skapa en ny användare
+// const middy = require('@middy/core');
+// const httpErrorHandler = require('@middy/http-error-handler');
+
+
 module.exports.signup = async (event) => {
     const { username, password } = JSON.parse(event.body);
-    const userId = uuidv4(); // Generera ett unikt userId
+    const userId = uuidv4(); 
 
     const params = {
       TableName: USERS_TABLE,
       Item: {
-        userId,    // Lägg till userId
+        userId,    
         username,
-        password,  // Tänk på att hash:a lösenord innan du sparar det
+        password, 
       },
     };
 
     try {
-      // Kontrollera om användarnamnet redan finns
+      
       const existingUser = await docClient.get({
         TableName: USERS_TABLE,
         Key: { username },
@@ -46,7 +49,7 @@ module.exports.signup = async (event) => {
     }
 };
 
-// Logga in användare och skapa JWT
+
 module.exports.login = async (event) => {
   const { username, password } = JSON.parse(event.body);
 
@@ -57,14 +60,14 @@ module.exports.login = async (event) => {
 
   try {
     const data = await docClient.get(params).promise();
-    if (!data.Item || data.Item.password !== password) { // Hasha lösenord för säkerhet
+    if (!data.Item || data.Item.password !== password) { 
       return {
         statusCode: 401,
         body: JSON.stringify({ error: 'Ogiltigt användarnamn eller lösenord' }),
       };
     }
 
-    const { userId } = data.Item;  // Hämta userId från databasen
+    const { userId } = data.Item;  
 
     const token = jwt.sign({ userId, username }, process.env.JWT_SECRET, { expiresIn: '1h' });
     return {
@@ -80,7 +83,7 @@ module.exports.login = async (event) => {
   }
 };
 
-// Middleware för att autentisera JWT
+
 const authenticateJWT = (req, res, next) => {
   const token = req.headers['authorization'] && req.headers['authorization'].split(' ')[1];
 
@@ -98,3 +101,27 @@ const authenticateJWT = (req, res, next) => {
 };
 
 module.exports.authenticateJWT = authenticateJWT;
+
+
+// Autentisering middleware
+// const authenticateJWT = async (event) => {
+//     const token = event.headers.Authorization || event.headers.authorization;
+
+//     if (!token) {
+//         throw new Error('Ingen token tillhandahållen');
+//     }
+
+//     return new Promise((resolve, reject) => {
+//         jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+//             if (err) {
+//                 return reject(new Error('Ogiltlig token'));
+//             }
+//             event.user = user; // Lägg till användarinformation i eventet
+//             resolve(event);
+//         });
+//     });
+// };
+
+// module.exports.signup = middy(signup).use(httpErrorHandler());
+// module.exports.login = middy(login).use(httpErrorHandler());
+// module.exports.authenticateJWT = authenticateJWT;

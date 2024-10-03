@@ -1,4 +1,6 @@
-service: quiztopia
+
+org: juliawikdahl
+service: quiztopia-api
 
 provider:
   name: aws
@@ -9,7 +11,7 @@ provider:
     USERS_TABLE: UsersTable
     JWT_SECRET: ${env:JWT_SECRET}
 
-# Definiera en IAM-roll med nödvändiga behörigheter
+
 iamRoleStatements:
   - Effect: Allow
     Action:
@@ -24,44 +26,44 @@ iamRoleStatements:
 
 functions:
   signup:
-    handler: auth.signup
+    handler: handler.signup   # Här refererar vi till handler-funktionen
     events:
       - http:
           path: auth/signup
           method: post
   login:
-    handler: auth.login
+    handler: handler.login
     events:
       - http:
           path: auth/login
           method: post
   getQuizzes:
-    handler: quiz.getQuizzes
+    handler: handler.getQuizzes
     events:
       - http:
           path: quiz
           method: get
   createQuiz:
-    handler: quiz.createQuiz
+    handler: handler.createQuiz
     events:
       - http:
           path: quiz
           method: post
   addQuestion:
-    handler: quiz.addQuestion
+    handler: handler.addQuestion
     events:
       - http:
           path: quiz/question
           method: post
   getQuiz:
-    handler: quiz.getQuiz
+    handler: handler.getQuiz
     events:
       - http:
           path: quiz/user/{userId}/quiz/{quizId}
           method: get
           cors: true
   deleteQuiz:
-    handler: quiz.deleteQuiz
+    handler: handler.deleteQuiz
     events:
       - http:
           path: quiz/{quizId}

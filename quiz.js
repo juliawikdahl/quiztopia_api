@@ -4,49 +4,61 @@ const { v4: uuidv4 } = require('uuid');
 const docClient = new AWS.DynamoDB.DocumentClient();
 const QUIZZES_TABLE = process.env.QUIZZES_TABLE;
 
+// Importera middy
+// const middy = require('@middy/core');
+// const httpErrorHandler = require('@middy/http-error-handler');
+// const validator = require('@middy/validator');
 
-// Hämta alla quiz
-module.exports.getQuizzes = async (event) => {
-    const params = {
-      TableName: QUIZZES_TABLE,
-    };
-  
-    try {
-      const data = await docClient.scan(params).promise();
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          success: true,
-          quizzes: data.Items, // Returnera quiz som hämtats
-        }),
-      };
-    } catch (error) {
-      console.error('Fel vid hämtning av alla quiz:', error);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: 'Fel vid hämtning av quiz', details: error.message }),
-      };
-    }
+
+// Middleware för autentisering
+// const authenticateJWT = async (event) => {
+//     const token = event.headers.Authorization || event.headers.authorization;
+
+//     if (!token) {
+//         throw new Error('Ingen token tillhandahållen');
+//     }
+
+//     const cleanToken = token.replace('Bearer ', '');
+//     return new Promise((resolve, reject) => {
+//         jwt.verify(cleanToken, process.env.JWT_SECRET, (err, user) => {
+//             if (err) {
+//                 return reject(new Error('Ogiltlig token'));
+//             }
+//             event.user = user; // Lägg till användarinformation i eventet
+//             resolve(event);
+//         });
+//     });
+// };
+
+module.exports.getQuizzes = async () => {
+  const params = {
+    TableName: QUIZZES_TABLE,
   };
 
-// Skapa ett nytt quiz
+  try {
+    const data = await docClient.scan(params).promise();
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ success: true, quizzes: data.Items }),
+    };
+  } catch (error) {
+    console.error('Fel vid hämtning av quiz:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Fel vid hämtning av quiz' }),
+    };
+  }
+};
+
 module.exports.createQuiz = async (event) => {
   try {
     const token = event.headers.Authorization || event.headers.authorization;
     const cleanToken = token.replace('Bearer ', '');
-
     const decoded = jwt.verify(cleanToken, process.env.JWT_SECRET);
-    const userId = decoded.userId;  // Extrahera userId från token
-
-    if (!userId) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'userId saknas i token' }),
-      };
-    }
+    const userId = decoded.userId;
 
     const { name } = JSON.parse(event.body);
-    const quizId = uuidv4();  // Skapa ett unikt quizId
+    const quizId = uuidv4();
 
     const params = {
       TableName: QUIZZES_TABLE,
@@ -61,7 +73,7 @@ module.exports.createQuiz = async (event) => {
     await docClient.put(params).promise();
 
     return {
-      statusCode: 200,
+      statusCode: 201,
       body: JSON.stringify({ success: true, quizId }),
     };
   } catch (error) {
@@ -73,16 +85,15 @@ module.exports.createQuiz = async (event) => {
   }
 };
 
-// Lägg till en fråga till ett quiz
+
 module.exports.addQuestion = async (event) => {
   try {
     const token = event.headers.Authorization || event.headers.authorization;
     const cleanToken = token.replace('Bearer ', '');
-
     const decoded = jwt.verify(cleanToken, process.env.JWT_SECRET);
     const userId = decoded.userId;
 
-    const { quizId, question, answer, location } = JSON.parse(event.body);
+    const { quizId, question, answer, longitude, latitude } = JSON.parse(event.body);
 
     const params = {
       TableName: QUIZZES_TABLE,
@@ -92,17 +103,20 @@ module.exports.addQuestion = async (event) => {
         ':question': [{
           question,
           answer,
-          location
+          location: {
+            longitude,
+            latitude,
+          },
         }],
       },
       ReturnValues: 'UPDATED_NEW',
     };
 
-    const result = await docClient.update(params).promise();
+    await docClient.update(params).promise();
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true, quiz: result.Attributes }),
+      body: JSON.stringify({ success: true }),
     };
   } catch (error) {
     console.error('Fel vid tillägg av fråga:', error);
@@ -114,86 +128,86 @@ module.exports.addQuestion = async (event) => {
 };
 
 
-// Hämta ett specifikt quiz
 module.exports.getQuiz = async (event) => {
-    const userId = event.pathParameters.userId; // Hämta userId från path
-    const quizId = event.pathParameters.quizId; // Hämta quizId från path
-  
+  const userId = event.pathParameters.userId; 
+  const quizId = event.pathParameters.quizId; 
+
+  const params = {
+    TableName: QUIZZES_TABLE,
+    Key: {
+      userId,
+      quizId,
+    },
+  };
+
+  try {
+    const data = await docClient.get(params).promise();
+    if (!data.Item) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ success: false, error: 'Quiz inte hittat' }),
+      };
+    }
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ success: true, quiz: data.Item }),
+    };
+  } catch (error) {
+    console.error('Fel vid hämtning av quiz:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ success: false, error: 'Fel vid hämtning av quiz', details: error.message }),
+    };
+  }
+};
+
+
+module.exports.deleteQuiz = async (event) => {
+  try {
+    const token = event.headers.Authorization || event.headers.authorization;
+    const cleanToken = token.replace('Bearer ', '');
+
+    const decoded = jwt.verify(cleanToken, process.env.JWT_SECRET);
+    const userId = decoded.userId;
+
+    const { quizId } = event.pathParameters; 
+
     const params = {
       TableName: QUIZZES_TABLE,
       Key: {
-        userId: userId, // Använd userId som partition key
-        quizId: quizId, // Använd quizId som sort key
+        userId,  
+        quizId, 
       },
     };
-  
-    try {
-      const data = await docClient.get(params).promise();
-      if (!data.Item) {
-        return {
-          statusCode: 404,
-          body: JSON.stringify({ success: false, error: 'Quiz inte hittat' }),
-        };
-      }
-  
+
+    const quiz = await docClient.get(params).promise();
+
+    if (!quiz.Item) {
       return {
-        statusCode: 200,
-        body: JSON.stringify({
-          success: true,
-          quiz: data.Item, // Returnera det hämtade quizet
-        }),
-      };
-    } catch (error) {
-      console.error('Fel vid hämtning av quiz:', error);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ success: false, error: 'Fel vid hämtning av quiz', details: error.message }),
+        statusCode: 404,
+        body: JSON.stringify({ success: false, message: 'Quiz inte hittat' }),
       };
     }
-  };
 
+    await docClient.delete(params).promise();
 
-  module.exports.deleteQuiz = async (event) => {
-    try {
-      // Hämta token från headers
-      const token = event.headers.Authorization || event.headers.authorization;
-      const cleanToken = token.replace('Bearer ', '');
-  
-      // Verifiera token och hämta userId
-      const decoded = jwt.verify(cleanToken, process.env.JWT_SECRET);
-      const userId = decoded.userId;
-  
-      if (!userId) {
-        return {
-          statusCode: 400,
-          body: JSON.stringify({ error: 'userId saknas i token' }),
-        };
-      }
-  
-      // Hämta quizId från URL-parametrar
-      const quizId = event.pathParameters.quizId;
-  
-      // Definiera parameters för att ta bort quizet
-      const params = {
-        TableName: QUIZZES_TABLE,
-        Key: {
-          quizId,
-          userId,  // Använd både quizId och userId för att säkerställa att rätt quiz raderas
-        },
-      };
-  
-      // Utför delete operation
-      await docClient.delete(params).promise();
-  
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ success: true, message: 'Quiz raderades framgångsrikt' }),
-      };
-    } catch (error) {
-      console.error('Fel vid radering av quiz:', error);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: 'Fel vid radering av quiz' }),
-      };
-    }
-  };
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ success: true, message: 'Quiz raderat' }),
+    };
+  } catch (error) {
+    console.error('Fel vid radering av quiz:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ success: false, message: 'Fel vid radering av quiz', error: error.message }),
+    };
+  }
+};
+
+// Exportera Lambda-funktionerna med middy och middleware
+// module.exports.getQuizzes = middy(getQuizzes).use(httpErrorHandler());
+// module.exports.createQuiz = middy(createQuiz).use(authenticateJWT).use(httpErrorHandler());
+// module.exports.addQuestion = middy(addQuestion).use(authenticateJWT).use(httpErrorHandler());
+// module.exports.getQuiz = middy(getQuiz).use(httpErrorHandler());
+// module.exports.deleteQuiz = middy(deleteQuiz).use(authenticateJWT).use(httpErrorHandler());
